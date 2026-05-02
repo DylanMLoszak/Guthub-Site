@@ -101,7 +101,7 @@ export default function Hero() {
               className="relative mx-auto aspect-[4/5] w-full max-w-[560px]"
             >
               <Image
-                src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=1200&q=85&auto=format&fit=crop"
+                src="https://images.unsplash.com/photo-1733004441455-183ce46c7c12?w=1200&q=85&auto=format&fit=crop"
                 alt="A portrait of someone smiling, full of warmth."
                 fill
                 priority

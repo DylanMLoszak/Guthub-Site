@@ -12,7 +12,7 @@ type Story = {
 
 const stories: Story[] = [
   {
-    photoId: "photo-1502823403499-6ccfcf4fb453",
+    photoId: "photo-1707325345108-82761c948d32",
     alt: "Portrait of Nadia, smiling softly.",
     rotate: "-rotate-[1.5deg]",
     quote: (
@@ -23,14 +23,14 @@ const stories: Story[] = [
     reverse: false,
   },
   {
-    photoId: "photo-1517841905240-472988babdf9",
-    alt: "Portrait of Andre, looking off to the side.",
+    photoId: "photo-1607102973478-24a0e7d6e2ac",
+    alt: "Portrait of Andrea, looking off to the side.",
     rotate: "rotate-[2deg]",
     quote: (
       <>She showed up wearing the dress from her profile. I told her she looked like a Sunday.</>
     ),
     body: "I'd stopped expecting much. The other apps had taught me to apologize before I'd even said hello. Here, the people felt unhurried. Less performance, more conversation. We're three months in and she still texts in full sentences.",
-    attribution: "Andre, 38 — Brooklyn",
+    attribution: "Andrea, 38 — Brooklyn",
     reverse: true,
   },
 ];
