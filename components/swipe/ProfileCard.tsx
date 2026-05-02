@@ -97,10 +97,10 @@ export const ProfileCard = forwardRef<ProfileCardHandle, ProfileCardProps>(
       { filterTaps: true, pointer: { touch: true } },
     );
 
-    const ghostStyle = useMemo(() => {
+    const stackPose = useMemo(() => {
+      if (index === 0) return { scale: 1, y: 0, opacity: 1 };
       if (index === 1) return { scale: 0.95, y: 16, opacity: 0.7 };
-      if (index === 2) return { scale: 0.9, y: 32, opacity: 0.4 };
-      return { display: "none" as const };
+      return { scale: 0.9, y: 32, opacity: 0.4 };
     }, [index]);
 
     const dragBind = isTop ? bind() : {};
@@ -113,13 +113,20 @@ export const ProfileCard = forwardRef<ProfileCardHandle, ProfileCardProps>(
         }`}
         style={{ touchAction: "none" }}
       >
+        {/* Outer: owns stack pose (scale, y-offset, opacity dim). Keyed on index
+            so position changes remount cleanly — Motion otherwise caches the
+            previous animate target and ignores the new pose.
+            Inner: owns drag transform (x, y, rotate, opacity fade) via motion values
+            owned by the parent component, so they survive the outer's remount. */}
         <motion.div
-          // Top card: drag motion values drive x/y/rotate/opacity via style.
-          // animate resets scale+y so a previously-ghosted card snaps back cleanly.
-          // Ghost cards: animate drives the offset/scale/opacity, style is unused.
-          style={isTop ? { x, y, rotate, opacity } : undefined}
-          animate={isTop ? { scale: 1, y: 0 } : ghostStyle}
+          key={`pose-${index}`}
+          initial={stackPose}
+          animate={stackPose}
           transition={SPRING}
+          className="h-full w-full"
+        >
+        <motion.div
+          style={isTop ? { x, y, rotate, opacity } : undefined}
           className="relative h-full w-full overflow-hidden rounded-2xl border border-ink/20 bg-cream-pale shadow-card"
         >
           <div className="relative h-[62%] w-full overflow-hidden">
@@ -179,6 +186,7 @@ export const ProfileCard = forwardRef<ProfileCardHandle, ProfileCardProps>(
               {profile.prompt.answer}
             </p>
           </div>
+        </motion.div>
         </motion.div>
       </div>
     );

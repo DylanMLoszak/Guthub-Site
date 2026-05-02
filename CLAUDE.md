@@ -24,32 +24,51 @@ No test suite is configured.
 - `/swipe` — Tinder-style swipe deck assembled from `components/swipe/*`
 
 **Component layout**:
-- `components/landing/` — seven server components (default exports): `Nav`, `Hero`, `Manifesto`, `HowItWorks`, `Stories`, `CTA`, `Footer`. `Nav` and `Hero` are client components (scroll listener + Motion animations).
+- `components/landing/` — seven components (default exports): `Nav`, `Hero`, `Manifesto`, `HowItWorks`, `Stories`, `CTA`, `Footer`. `Nav` and `Hero` are `"use client"` (scroll listener and Motion animations respectively); the rest are server components.
 - `components/swipe/` — five client components (named + default exports): `CardStack` (deck manager), `ProfileCard` (draggable card with swipe physics), `ActionBar`, `MatchModal`, `SwipeNav`.
 - `components/ui/` — `Wordmark` and `Ornament` primitives (named exports).
 - `lib/profiles.ts` — seeded `Profile[]` with Unsplash photo URLs. This is the only data source; there is no backend.
 
+**Animation library**: The package is `motion` (v12), not `framer-motion`. All imports come from `motion/react`. Do not use `framer-motion` imports.
+
 ## Design system
 
-All tokens are defined in `app/globals.css` via Tailwind v4's `@theme` block. Use Tailwind token names directly in className — do not use hardcoded hex values.
+All tokens are defined in `app/globals.css` via Tailwind v4's `@theme` block — there is no `tailwind.config.js`. Use Tailwind token names directly in `className`; do not use hardcoded hex values.
 
 | Role | Token |
 |---|---|
 | Primary text | `text-ink` / `bg-ink` |
+| Muted text | `text-ink-soft` |
 | Canvas background | `bg-cream` (set on `body`) |
 | Card surface | `bg-cream-pale` |
 | Primary accent (CTAs, like) | `text-terracotta` / `bg-terracotta` |
 | Dark accent (modals, manifesto) | `bg-oxblood` |
+| Card shadow (resting) | `shadow-card` |
+| Card shadow (lifted/dragging) | `shadow-card-lift` |
 
-**Typography**: `font-display` → Fraunces (headlines, pull-quotes, italic weight 500 for italic). `font-body` / default → Inter Tight. The `.eyebrow` CSS class produces small-caps tracked labels (used throughout). Do not use `font-sans` or other Tailwind defaults — the theme overrides these.
+**Typography**: `font-display` → Fraunces (headlines, pull-quotes; use `italic` + `style={{ fontWeight: 500 }}` for italic weight). `font-body` / default → Inter Tight. Do not use `font-sans` or other Tailwind defaults — the theme overrides these.
 
-**Images**: all remote images must be from `images.unsplash.com` (the only whitelisted domain). Use `next/image` with `fill` + a positioned parent, or explicit `width`/`height`. Profile photo URLs are constructed via the `u()` helper in `lib/profiles.ts`.
+**CSS utility classes** (defined in `globals.css`, not Tailwind plugins):
+- `.eyebrow` — small-caps tracked uppercase label, used for section numbers and attributions
+- `.grain` — adds a subtle noise texture via `::after` pseudo-element; requires `position: relative` on the element
+- `.paper` — cream panel with radial highlight; used for card-like surfaces
+- `.hairline` — thin border using `--color-ink`
+- `.mask-fade-bottom` — gradient mask that fades image to transparent at the bottom (used by `ProfileCard` photo overlay)
+- `.cursor-grab` / active state — grab cursor for draggable elements
+
+**Images**: All remote images must be from `images.unsplash.com` (the only whitelisted domain in `next.config.ts`). Use `next/image` with `fill` + a positioned parent, or explicit `width`/`height`. Profile photo URLs are constructed via the `u()` helper in `lib/profiles.ts` — this helper already appends `?w=900&q=80&auto=format&fit=crop`, so do not add query params manually.
 
 ## Swipe deck mechanics
 
-`ProfileCard` uses `@use-gesture/react` `useDrag` bound to an outer `<div>` (not the `motion.div`) to avoid type conflicts with Motion's own drag API. Motion values `x`, `y`, `rotate`, `opacity` drive the card. The imperative `swipe(direction)` handle is exposed via `forwardRef` + `useImperativeHandle` so `CardStack` and `ActionBar` can trigger programmatic swipes. A `swipingRef` inside each card prevents double-fires.
+`ProfileCard` uses `@use-gesture/react` `useDrag` bound to an outer `<div>` (not the `motion.div`) to avoid type conflicts with Motion's own drag API. The card body is **two stacked `motion.div`s**: the outer (`key={`pose-${index}`}`) animates stack pose (scale/y/opacity) via `animate={stackPose}`; the inner binds motion values `x`, `y`, `rotate`, `opacity` via `style` for drag. Do not collapse these into one motion.div — see gotcha below. The imperative `swipe(direction)` handle is exposed via `forwardRef` + `useImperativeHandle` so `CardStack` and `ActionBar` can trigger programmatic swipes. A `swipingRef` inside each card prevents double-fires.
 
 `CardStack` renders up to 3 cards from `profiles[index..index+2]`, reversed in DOM so the top card renders last. Match modal fires when `likeCount` first hits 3.
+
+**Known gotchas**:
+- **Motion `style` + `animate` double-binding**: a single `motion.div` with motion values in `style` AND target props in `animate` will cache the previous animate state and silently ignore prop updates when the role flips (e.g. ghost → top). Either separate concerns into two layered motion.divs, or use a `key` that changes with the role to force a remount.
+- `isSwipingRef` in `CardStack` can deadlock if the card's internal `swipingRef` blocks a throw — `handleSwipe` never fires so the lock never resets (Issue #3). Do not test via rapid programmatic clicks (Playwright included); use drag gestures or wait >400ms between action bar presses.
+- `document.querySelector('h2')` returns the bottom ghost card's name, not the top card's, because cards are rendered in reverse DOM order.
+- `npm run lint` reports one pre-existing warning (`likeCount` unused in `CardStack.tsx`) — this is tied to unfixed Issue #2. Do not fix as side work.
 
 ## Fonts
 
