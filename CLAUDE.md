@@ -66,9 +66,10 @@ All tokens are defined in `app/globals.css` via Tailwind v4's `@theme` block —
 
 **Known gotchas**:
 - **Motion `style` + `animate` double-binding**: a single `motion.div` with motion values in `style` AND target props in `animate` will cache the previous animate state and silently ignore prop updates when the role flips (e.g. ghost → top). Either separate concerns into two layered motion.divs, or use a `key` that changes with the role to force a remount.
-- `isSwipingRef` in `CardStack` can deadlock if the card's internal `swipingRef` blocks a throw — `handleSwipe` never fires so the lock never resets (Issue #3). Do not test via rapid programmatic clicks (Playwright included); use drag gestures or wait >400ms between action bar presses.
+- **`topCardRef` must use a callback ref that ignores `null` calls**: when index advances, the outgoing top card unmounts and the previously-ghost card promotes in the same React commit. React doesn't guarantee the unmount cleanup runs before the new top's setup, so a plain `ref={isTop ? topCardRef : undefined}` on a `useImperativeHandle`-exposed handle ends up null after the swap. `CardStack` uses `setTopCardRef` (callback ref that only writes non-null handles) to avoid this.
 - `document.querySelector('h2')` returns the bottom ghost card's name, not the top card's, because cards are rendered in reverse DOM order.
-- `npm run lint` reports one pre-existing warning (`likeCount` unused in `CardStack.tsx`) — this is tied to unfixed Issue #2. Do not fix as side work.
+- Action-bar clicks are debounced via `isSwipingRef` for 350 ms (the throw animation duration). Clicks faster than that are silently dropped — when verifying via Playwright, wait >400 ms between clicks.
+- `npm run lint` reports one pre-existing warning (`likeCount` unused in `CardStack.tsx`). The variable is kept for documentation; the match modal computes via the `setLikeCount` callback's `prev` parameter. Don't "fix" by removing it unless you're also adding a likeCount display.
 
 ## Fonts
 

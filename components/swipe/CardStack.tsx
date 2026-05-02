@@ -30,6 +30,17 @@ export function CardStack() {
   // Prevents rapid-fire action-bar clicks from hitting an already-swiping card.
   const isSwipingRef = useRef(false);
 
+  // Callback ref for the top card. Skipping null calls is load-bearing: when
+  // index advances, the previous top card unmounts and the previously-ghost
+  // card promotes in the same React commit. React isn't guaranteed to run
+  // the unmount cleanup before the new top's setup, so a naive `ref.current
+  // = handle` (or unconditional `ref.current = null` on detach) can leave
+  // topCardRef.current null after Jules promotes — which silently no-ops
+  // the next action-bar swipe and deadlocks isSwipingRef.
+  const setTopCardRef = useCallback((handle: ProfileCardHandle | null) => {
+    if (handle) topCardRef.current = handle;
+  }, []);
+
   const handleSwipe = useCallback(
     (direction: SwipeDirection) => {
       const swipedProfile = profiles[index];
@@ -137,7 +148,7 @@ export function CardStack() {
                 return (
                   <ProfileCard
                     key={profile.id}
-                    ref={isTop ? topCardRef : undefined}
+                    ref={isTop ? setTopCardRef : undefined}
                     profile={profile}
                     isTop={isTop}
                     index={stackIdx}
